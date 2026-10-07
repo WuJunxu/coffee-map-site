@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>多米尼加 · 咖啡产区分布图</title>
+<link rel="stylesheet" href="../country.css">
+</head>
+<body>
+<script>window.CTNAME="多米尼加";</script>
+<div class="wrap">
+
+  <div class="topbar">
+    <a class="back" href="../index.html">&#8592; 返回世界咖啡产区图</a>
+    <div class="ttl"><b id="h1"></b><span class="en" id="h2"></span></div>
+    <div class="stats" id="h3"></div>
+    <select id="ctSel" title="切换到其它国家的产区图"></select>
+  </div>
+
+  <div class="toolbar">
+    <div class="grp"><span class="lb">点色相</span>
+      <div class="seg" id="segVar">
+        <button data-v="process" class="on">处理法</button>
+        <button data-v="roast">烘焙度</button>
+        <button data-v="species">豆种</button>
+        <button data-v="flavor">风味族</button>
+      </div>
+    </div>
+    <div class="grp"><div class="chk on" id="chkLabel">产区注记</div></div>
+    <div class="hint">悬停查看产区 · 点击符号或名册行锁定 · 名册与图上符号双向联动</div>
+  </div>
+
+  <div class="mapwrap">
+    <svg id="map" viewBox="0 0 1500 890" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="tip" id="tip"></div>
+  </div>
+
+  <div class="roster" id="roster"></div>
+
+  <div class="notes">
+    <div class="note">
+      <h4>本图范围与投影</h4>
+      <p><b>投影：</b>墨卡托投影，中央纬线取图幅中心纬度（精确值标注在右下比例尺下方）。咖啡产区均位于低纬度，墨卡托在此的长度变形很小。</p>
+      <p><b>图幅：</b>按本国（或产区所在属地）范围自适应；远离产区的海外领地会被剔除，以免图幅被撑开、产区点被压缩。</p>
+      <p><b>底图：</b>Natural Earth 1:50m 国界；中国国界采用国家测绘标准口径的官方行政区划边界绘制。深色邻国仅作地理参照。</p>
+    </div>
+    <div class="note">
+      <h4>关于「著名子产区」</h4>
+      <p>名册第二列列出该产区下有代表性的子单元，每个都带<b>单元类型</b>标签（行政区 / 处理站 / 庄园 / 地块 / 法定产区）—— <b>各国的层级并不统一，不能横向比大小</b>：埃塞俄比亚多为 woreda（县）或水洗站，肯尼亚是合作社水洗站，哥伦比亚与巴西是市镇，巴拿马是庄园地块。</p>
+      <p>收录标准是「该名字在市面上被单独标名流通」，不是行政区名录的照搬；没有可靠子产区的一律留空。<b>典型案例：</b>古吉（Guji）是 Oromia 州下的 Zone，其下含罕贝拉（Hambella）、乌拉嘎（Uraga）、安娜索拉（Ana Sora）、夏奇索（Shakiso）等 woreda；所谓「花魁」是 2017 年起中国市场对 Hambella Buku Abel 处理厂日晒批次的命名 —— <b>批次名，不是品种名</b>。</p>
+    </div>
+    <div class="note">
+      <h4>字段口径与局限</h4>
+      <p><b>海拔 / 品种 / 处理法 / 风味</b>均为产区层面的常见区间与典型描述，同一产区内不同庄园会有差异；点位取产区几何中心或代表城镇，非庄园精确边界。</p>
+      <p><b>烘焙度</b>不是产区固有属性，而是烘焙商针对该产区豆性（密度、海拔、酸质、body）的常见选择区间，应读作"通常被烘成什么"，而非"应该烘成什么"。</p>
+      <p><b>产量</b>为 USDA FAS 2024/25 量级近似值，仅用于分级，不作精确统计引用。</p>
+    </div>
+  </div>
+
+</div>
+<script src="../country-geo.js"></script>
+<script src="../regions.js"></script>
+<script src="../countries.js"></script>
+<script src="../country-map.js"></script>
+</body>
+</html>

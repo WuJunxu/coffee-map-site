@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>世界咖啡产区与庄园分布图</title>
+<style>
+:root{
+  --bg:#0b0f14; --bg2:#0f151d; --panel:#131b24; --line:#243040; --line2:#2f3d4e;
+  --ink:#e9e4da; --ink2:#b9c2ce; --mut:#7d8794; --dim:#5b6675;
+  --gold:#d9a441; --gold2:#f0c46a; --sea:#0d131b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+  font-family:"PingFang SC","Hiragino Sans GB","Noto Sans SC","Source Han Sans SC","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;}
+body{padding:14px 14px 30px;}
+
+/* ── 工具条 ── */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-bottom:12px;}
+.grp{display:flex;align-items:center;gap:7px}
+.grp>.lb{font-size:11px;color:var(--mut);letter-spacing:.06em;white-space:nowrap}
+.seg{display:flex;border:1px solid var(--line2);border-radius:6px;overflow:hidden}
+.seg button{background:transparent;border:0;color:var(--ink2);font:inherit;font-size:12px;
+  padding:5px 11px;cursor:pointer;border-right:1px solid var(--line2);transition:.14s}
+.seg button:last-child{border-right:0}
+.seg button:hover{background:#1b2531;color:var(--ink)}
+.seg button.on{background:var(--gold);color:#20170a;font-weight:600}
+.chk{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink2);cursor:pointer;
+  padding:4px 9px;border:1px solid var(--line2);border-radius:6px;user-select:none;transition:.14s}
+.chk:hover{background:#1b2531}
+.chk.on{background:#1e2a38;border-color:var(--gold);color:var(--gold2)}
+.chk i{width:9px;height:9px;border-radius:2px;display:inline-block;background:currentColor}
+input[type=search]{background:#0d141c;border:1px solid var(--line2);border-radius:6px;color:var(--ink);
+  font:inherit;font-size:12px;padding:5px 10px;width:170px;outline:none}
+input[type=search]:focus{border-color:var(--gold)}
+.btn{background:#1a2431;border:1px solid var(--line2);color:var(--ink2);font:inherit;font-size:12px;
+  padding:5px 11px;border-radius:6px;cursor:pointer}
+.btn:hover{background:#222f3f;color:var(--ink)}
+.cnt{font-size:11px;color:var(--mut);margin-left:auto}
+
+/* ── 地图 ── */
+.mapwrap{position:relative;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--sea)}
+svg#map{display:block;width:100%;height:auto;touch-action:none;cursor:grab}
+svg#map.dragging{cursor:grabbing}
+svg#map text{font-family:"PingFang SC","Hiragino Sans GB","Noto Sans SC",sans-serif}
+
+/* ── 视图控制（放大 / 缩小 / 缩回全图 / 全屏） ── */
+.zoomctl{position:absolute;left:12px;top:50%;transform:translateY(-50%);z-index:12;
+  display:flex;flex-direction:column;gap:6px;align-items:center}
+.zoomctl button{width:34px;height:34px;border-radius:7px;background:rgba(19,27,36,.94);
+  border:1px solid var(--line2);color:var(--ink2);font-size:16px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0;transition:.14s;
+  backdrop-filter:blur(3px)}
+.zoomctl button:hover{background:#22303f;color:var(--gold2);border-color:var(--gold)}
+.zoomctl button:active{transform:scale(.94)}
+.zoomctl button.sm{font-size:11px}
+.zoomctl .zk{font-size:10px;color:var(--mut);text-align:center;letter-spacing:.02em;
+  background:rgba(13,18,25,.9);border-radius:4px;padding:2px 3px;min-width:34px}
+.mapwrap:fullscreen{height:100vh;background:var(--bg);display:flex;align-items:center;
+  justify-content:center;border:0;border-radius:0}
+.mapwrap:fullscreen svg#map{width:100%;height:100%;object-fit:contain}
+.zoomctl .fs-on{color:var(--gold2);border-color:var(--gold)}
+
+/* ── 悬浮卡 ── */
+.tip{position:absolute;pointer-events:none;z-index:9;background:rgba(12,17,23,.96);
+  border:1px solid var(--line2);border-radius:7px;padding:8px 11px;font-size:12px;line-height:1.6;
+  box-shadow:0 8px 24px rgba(0,0,0,.6);max-width:250px;opacity:0;transition:opacity .1s}
+.tip.on{opacity:1}
+.tip b{color:var(--gold2);font-size:13px}
+.tip .r{color:var(--mut);font-size:11px}
+
+/* ── 详情面板 ── */
+.card{position:absolute;top:14px;right:14px;width:340px;max-height:calc(100% - 28px);overflow-y:auto;
+  z-index:10;background:rgba(13,18,25,.97);
+  border:1px solid var(--line2);border-left:3px solid var(--gold);border-radius:8px;padding:13px 15px;
+  box-shadow:0 12px 34px rgba(0,0,0,.65);display:none;font-size:12px;line-height:1.65}
+.card::-webkit-scrollbar{width:6px}
+.card::-webkit-scrollbar-thumb{background:#2b3949;border-radius:3px}
+.card.on{display:block}
+.card .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.card .nm{font-size:17px;font-weight:600;color:var(--ink);letter-spacing:.02em}
+.card .en{font-size:11px;color:var(--mut);margin-top:2px}
+.card .x{cursor:pointer;color:var(--dim);font-size:16px;line-height:1}
+.card .x:hover{color:var(--ink)}
+.card .row{margin-top:9px;padding-top:9px;border-top:1px solid #1e2836}
+.card .k{font-size:10px;color:var(--dim);letter-spacing:.1em;margin-bottom:3px}
+.card .v{color:var(--ink2)}
+.card .v.big{color:var(--gold2);font-size:13px;font-weight:600}
+.bar{display:flex;gap:3px;margin-top:5px}
+.bar span{flex:1;height:7px;border-radius:2px;background:#1c2634;position:relative}
+.bar span.on{background:linear-gradient(90deg,#8a5a2a,#d9a441)}
+.bar span.on2{background:linear-gradient(90deg,#f0c46a,#d9a441)}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.tag{font-size:10.5px;padding:2px 7px;border-radius:3px;background:#1a2431;color:var(--ink2);border:1px solid #26313f}
+.altbar{height:8px;border-radius:4px;background:linear-gradient(90deg,#3a4a5c,#6f8fa8,#a9c0d0);position:relative;margin-top:6px}
+.altbar i{position:absolute;top:-3px;width:2px;height:14px;background:var(--gold2);border-radius:1px}
+.jump{display:inline-block;font-size:12.5px;color:#20170a;background:linear-gradient(90deg,#f0c46a,#d9a441);
+  padding:6px 12px;border-radius:6px;text-decoration:none;font-weight:600}
+.jump:hover{filter:brightness(1.08)}
+
+/* ── 子产区区块 ── */
+.subs{display:flex;flex-direction:column;gap:6px;margin-top:5px}
+.sub{border-left:2px solid #33455a;padding:1px 0 1px 8px}
+.sub .snm{color:var(--gold2);font-size:12.5px;font-weight:600}
+.sub .sen{color:var(--dim);font-size:10.5px;margin-left:6px}
+.sub .sty{font-size:9.5px;padding:0 4px;border:1px solid var(--line2);border-radius:3px;
+  color:var(--mut);margin-left:6px;vertical-align:1px;white-space:nowrap}
+.sub .smeta{display:block;font-size:10.5px;color:var(--mut);margin-top:1px}
+.sub .snt{display:block;color:var(--ink2);font-size:11px;line-height:1.6;margin-top:2px}
+.snote{font-size:10.5px;color:var(--dim);line-height:1.65;margin-top:7px;padding:6px 8px;
+  border:1px dashed var(--line2);border-radius:4px;background:#101822}
+
+/* ── 用户自填「口味描述」 ── */
+.nt-tag{color:var(--gold);letter-spacing:.02em}
+.nta{width:100%;margin-top:4px;background:#0a0f15;border:1px solid var(--line2);border-radius:5px;
+  color:var(--ink);font:inherit;font-size:11.5px;line-height:1.65;padding:6px 8px;
+  resize:vertical;outline:none}
+.nta:focus{border-color:var(--gold)}
+.nta::placeholder{color:#4d5666}
+.nbar{display:flex;align-items:center;gap:7px;margin-top:6px}
+.nbtn{background:linear-gradient(90deg,#f0c46a,#d9a441);color:#20170a;border:0;border-radius:5px;
+  font:inherit;font-size:11.5px;font-weight:600;padding:4px 12px;cursor:pointer}
+.nbtn:hover{filter:brightness(1.08)}
+.nbtn.ghost{background:#1a2431;color:var(--mut);border:1px solid var(--line2);font-weight:400}
+.nbtn.ghost:hover{background:#222f3f;color:var(--ink)}
+.nst{font-size:10.5px;color:var(--dim)}
+.nst.ok{color:var(--gold2)}
+
+/* ── 脚注 ── */
+.notes{margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.note{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.75;color:var(--ink2)}
+.note h4{margin:0 0 6px;font-size:12.5px;color:var(--gold2);font-weight:600;letter-spacing:.04em}
+.note p{margin:0 0 6px}
+.note p:last-child{margin:0}
+.note b{color:var(--ink)}
+.warn{color:#e0a06a}
+.hint{font-size:11.5px;color:var(--dim);text-align:center;margin-top:10px}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="grp"><span class="lb">点着色变量</span>
+    <div class="seg" id="segVar">
+      <button data-v="process" class="on">处理法</button>
+      <button data-v="roast">烘焙度</button>
+      <button data-v="species">豆种</button>
+      <button data-v="flavor">风味族</button>
+    </div>
+  </div>
+  <div class="grp"><span class="lb">豆种筛选</span>
+    <div class="seg" id="segSp">
+      <button data-s="all" class="on">全部</button>
+      <button data-s="arabica">阿拉比卡</button>
+      <button data-s="robusta">罗布斯塔</button>
+      <button data-s="both">兼产</button>
+    </div>
+  </div>
+  <div class="grp"><span class="lb">海拔筛选</span>
+    <div class="seg" id="segAlt">
+      <button data-a="all" class="on">全部</button>
+      <button data-a="hi">≥1500m 高海拔</button>
+      <button data-a="lo">&lt;1000m 低海拔</button>
+    </div>
+  </div>
+  <div class="grp"><span class="lb">图层</span>
+    <div class="chk" id="chkLabel"><i></i>产区注记</div>
+    <div class="chk" id="chkBelt"><i></i>咖啡带</div>
+    <div class="chk" id="chkGrid"><i></i>经纬网</div>
+  </div>
+  <div class="grp"><span class="lb">国家产区图</span>
+    <select id="ctJump" style="background:#0d141c;border:1px solid var(--line2);border-radius:6px;
+      color:var(--ink);font:inherit;font-size:12px;padding:5px 8px;outline:none;max-width:190px"></select>
+  </div>
+  <div class="grp"><input type="search" id="q" placeholder="搜索产区 / 子产区 / 国家 / 风味…"></div>
+  <div class="grp"><button class="btn" id="btnReset">重置</button></div>
+  <div class="cnt" id="cnt"></div>
+</div>
+
+<div class="mapwrap">
+  <svg id="map" viewBox="0 0 1600 1100" preserveAspectRatio="xMidYMid meet"></svg>
+  <div class="zoomctl">
+    <button id="zIn"  title="放大　滚轮上滚 / 键盘 +">＋</button>
+    <div class="zk" id="zK">1.0×</div>
+    <button id="zOut" title="缩小　滚轮下滚 / 键盘 −">－</button>
+    <button id="zFit" class="sm" title="缩回全图　键盘 0">⤢</button>
+    <button id="zFull" class="sm" title="全屏 / 退出全屏　键盘 F">⛶</button>
+  </div>
+  <div class="tip" id="tip"></div>
+  <div class="card" id="card"></div>
+</div>
+
+<div class="notes">
+  <div class="note">
+    <h4>关于「烘焙程度」这条字段 —— 一个必须说清的事</h4>
+    <p><b>烘焙度不是产区的属性，而是烘焙商的选择。</b>同一支耶加雪菲可以做成浅焙也可以做成深焙，产区本身不产"烘焙度"。
+    本图每个产区标注的是<b>该产区豆性（密度、海拔、酸质、body）对应的市场常见烘焙区间</b>，属于经验性归纳，不是产地标准。</p>
+    <p class="warn">因此本图的烘焙度应读作"通常被烘成什么"，而非"应该烘成什么"。</p>
+  </div>
+  <div class="note">
+    <h4>制图说明</h4>
+    <p><b>投影：</b>Robinson 折衷投影（1963），中央经线 0°，标准纬线约 ±38°，兼顾面积与形状变形，适宜世界分布图。</p>
+    <p><b>面状：</b>分级统计（Choropleth），按各国生豆年产量分 6 级填色（含"无商业产量"共 7 类）。</p>
+    <p><b>点状：</b>位置＝产区，<b>大小＝海拔中值</b>，<b>形状＝豆种大类</b>（圆＝阿拉比卡／菱形＝罗布斯塔／环＝兼产），<b>色相可切换</b>：处理法 · 烘焙度 · 豆种 · 风味主族。四种色相方案共用同一套点位，切换即可读出不同的地理格局。</p>
+    <p><b>注记：</b>34 个一级产区常显注记，采用八方向候选位＋矩形碰撞检测的自动避让，配引线；其余产区悬停或点击显示。缩放到高倍时注记自动重排。</p>
+    <p><b>口味描述（我的记录）：</b>每个产区都可自填一段文本，<b>增 / 改 / 删</b>随时可操作，<b>Ctrl(⌘)+Enter 保存</b>。写在浏览器本地（localStorage，键名 <code>coffee-map.taste.v1</code>），只对本机本浏览器生效、不上传；写了记录的产区会在图面符号右上角挂一枚<b style="color:var(--gold2)">金色小点</b>，搜索框也能搜到你自己写过的字。<b>换浏览器 / 清缓存会丢</b>，重要内容请自行另存。</p>
+    <p><b>咖啡带：</b>南北纬 25° 之间的淡色带。商业咖啡几乎全部落在此带内 —— 图上可直观校验这一点；指北针与比例尺置于图幅右下极区空白，比例尺仅在赤道附近近似成立（Robinson 为折衷投影，无固定比例尺）。</p>
+    <p><b>国家级图集：</b>45 个产区所在国家/地区各有 1 张《咖啡产区分布图》（countries/ 目录，Natural Earth 1:50m 精细国界、墨卡托投影、产区名册与图上符号双向联动）。<b>双击图上国界</b>、点击国家卡片中的跳转按钮，或使用工具栏"国家产区图"下拉框进入。</p>
+  </div>
+  <div class="note">
+    <h4>关于「子产区」—— 一条比产区名更容易踩坑的字段</h4>
+    <p>107 个产区中有 <b>24 个收录了著名子产区（共 76 个）</b>，例如古吉（Guji）下有罕贝拉（Hambella）、乌拉嘎（Uraga）、安娜索拉（Ana Sora）、夏奇索（Shakiso）。在产区卡片里点击产区点即可展开。</p>
+    <p><b>子产区的「层级」各国并不统一，不能横向比大小：</b>埃塞俄比亚是 woreda（县）或水洗站，哥伦比亚是 municipio（市镇），肯尼亚是合作社水洗站，巴拿马是庄园地块，巴西则是市镇或法定产区（DO/IG）。所以每个子产区都带一个<b>单元类型</b>标签（行政区 / 处理站 / 庄园 / 地块 / 法定产区），先看这一格再比较。</p>
+    <p><b>古吉 vs 耶加雪菲，层级其实不对等：</b>埃塞的行政层级是 Region（州）→ Zone（区）→ Woreda（县）。西达摩是<b>州</b>（2020 年从 SNNPR 独立），古吉是 Oromia 州下的 <b>Zone</b>，而耶加雪菲只是 Gedeo Zone 下的一个 <b>woreda</b>。市面上的「产区名」把三级混着用，这是埃塞产区名最容易被误读的地方。</p>
+    <p class="warn"><b>顺带辟一处谣：「花魁」不是品种，也不是古吉之外的独立产区。</b>它是 2017 年起中国市场对 <b>Hambella（罕贝拉）Buku Abel 处理厂</b>日晒批次的命名，按年份编号（花魁 1.0、2.0……）流通。罕贝拉是古吉 Zone 下的一个 woreda —— 花魁 ⊂ 罕贝拉 ⊂ 古吉。</p>
+  </div>
+  <div class="note">
+    <h4>数据来源与局限</h4>
+    <p><b>底图：</b>Natural Earth 1:110m 国界（公有领域）；<b>中国国界</b>采用国家测绘标准口径的官方行政区划边界绘制，完整包含台湾岛、藏南、阿克赛钦与南海诸岛。<b>产量：</b>USDA FAS《Coffee: World Markets and Trade》2024/25 量级近似值，取整用于分级，<b>不作精确统计引用</b>。</p>
+    <p><b>产区：</b>107 个产区／庄园群，分属 45 个国家/地区；海拔、品种、处理法、风味为产区层面的常见区间与典型描述，同一产区内不同庄园会有差异；部分小产区（如也门、东帝汶、圣赫勒拿）公开资料零散，数值为常见区间的保守估计。</p>
+    <p><b>子产区：</b>只在「该名字在市面上被单独标名流通」时才收录，不是行政区名录的照搬；因此有的产区收录了 5 个子产区，有的一律留空 —— <b>没有可靠子产区的不编</b>。子产区的海拔与处理法同样为常见区间。</p>
+    <p><b>风味主族：</b>由风味描述文本按关键词规则归纳为 6 族（酒香发酵／莓果／花香／柑橘核果／香料草本／坚果可可），用于色相切换与快速聚类，非官方分级。</p>
+    <p><b>坐标：</b>产区点位取产区几何中心或代表城镇，非庄园精确边界。</p>
+  </div>
+</div>
+<div class="hint">悬停查看产区卡片 · 单击锁定 · 卡片底部可自填<b style="color:var(--gold2)">口味描述</b>（⌘/Ctrl+Enter 保存） · <b style="color:var(--gold2)">双击国界</b>进入该国产区细部图 · 拖动＝平移 · 滚轮＝缩放 · 也可用左侧控制条或键盘 <b style="color:var(--gold2)">＋ － 0 F</b> 与方向键</div>
+
+<script src="world-geo.js"></script>
+<script src="regions.js"></script>
+<script src="countries.js"></script>
+<script src="map.js"></script>
+</body>
+</html>
